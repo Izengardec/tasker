@@ -1,17 +1,6 @@
 <?php
-require_once 'connection.php';
-$comp="";
-if(isset($_POST['submit'])){
-	if ($_POST['login']!='' and $_POST['email']!='' and $_POST['task']!=''){
-		$link2=mysqli_connect($host,$user,$password,$database) or die("Ошибка".mysqli_error($link2));
-		mysqli_set_charset($link2,"utf8");
-		$query="INSERT INTO `Tasks`(`name`, `email`, `task`) VALUES ('".strip_tags($_POST['login'])."','".strip_tags($_POST['email'])."','".strip_tags($_POST['task'])."')";
-		$result2=mysqli_query($link2,$query)or die("Ошибка запроса".mysqli_error($link2));
-		$comp="Запрос выполнен успешно.";
-		mysqli_close($link2);
-	}
-}
 
+require_once 'connection.php';
  ?>
  <html>
 	<head>
@@ -22,22 +11,13 @@ if(isset($_POST['submit'])){
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     </head>
     <body>
-			<a href="loginForm.php" class="btn btn-outline-primary">LOGIN</a>
-        <form method="post">
-					<input type="text" name="login" class="form-control" placeholder="Ваше имя" style="margin: 5px;" required>
-					<input type="email" name="email" class="form-control" placeholder="Ваш email" style="margin: 5px;" required>
-					<input type="text" name = "task" class="form-control"  placeholder="Ваше задание" style="margin: 5px;" required>
-					<input type="submit" class="btn btn-primary" name="submit">
-        </form>
-				<?php
-					if ($comp!=""){
-						echo "<div class='alert alert-success'>".$comp."</div>";
-					}
-				 ?>
+      <form method="post" action="loginForm.php">
+        <input type="submit" class="btn btn-outline-primary" name = "logout" value="Logout" style="margin: 5px;">
+      </form>
 				<form method="post">
-					<input type="submit" class="btn btn-primary" name="logSort" style="margin: 5px;" value="Сортировка по имени">
-					<input type="submit" class="btn btn-primary"  name="emailSort" style="margin: 5px;" value="Сортировка по email">
-					<input type="submit" class="btn btn-primary" name = "taskSort" style="margin: 5px;" value="Сортировка по готовности">
+          <input type="submit" class="btn btn-primary" name="logSort" value="Сортировка по имени" style="margin: 5px;">
+					<input type="submit" class="btn btn-primary"  name="emailSort" value="Сортировка по email" style="margin: 5px;">
+					<input type="submit" class="btn btn-primary" name = "taskSort" value="Сортировка по готовности" style="margin: 5px;">
         </form>
 
 				<?php
@@ -69,7 +49,7 @@ if(isset($_POST['submit'])){
 					$query="SELECT * FROM `Tasks` ORDER BY `Tasks`.`name` DESC LIMIT ".($_GET['page']*3)." , 3";
 				}
 
-				 if ((isset($_POST['emailSort']) && $_COOKIE['typeSort']!=2) || (!$_COOKIE['dblClickSort'] && $_COOKIE['typeSort']==2 && (isset($_POST['emailSort'])) ))
+				 if ((isset($_POST['emailSort']) && $_COOKIE['typeSort']!=2) || (!$_COOKIE['dblClickSort'] && $_COOKIE['typeSort']==2 && (isset($_POST['logSort'])) ))
 				{
 					$_COOKIE['dblClickSort']=true;
 					$_COOKIE['typeSort']=2;
@@ -94,7 +74,7 @@ if(isset($_POST['submit'])){
 					$query="SELECT * FROM `Tasks` ORDER BY `Tasks`.`email` DESC LIMIT ".($_GET['page']*3)." , 3";
 				}
 
-				if ((isset($_POST['taskSort']) && $_COOKIE['typeSort']!=3) || (!$_COOKIE['dblClickSort'] && $_COOKIE['typeSort']==3 && (isset($_POST['taskSort'])) ))
+				if ((isset($_POST['taskSort']) && $_COOKIE['typeSort']!=3) || (!$_COOKIE['dblClickSort'] && $_COOKIE['typeSort']==3 && (isset($_POST['logSort'])) ))
 				{
 					$_COOKIE['dblClickSort']=true;
 					$_COOKIE['typeSort']=3;
@@ -137,16 +117,41 @@ if(isset($_POST['submit'])){
 						 ?>
 					</div>
 					<?php
-					echo "<table class='table table-bordered table-striped'>";
+				echo "<form method='post'>
+        <table class='table table-bordered table-striped'>";
 
-						for($i=0;$i<3;$i++){
-							$row=mysqli_fetch_row($result);
-							if ($row[1]!="") {
-								echo "<tr><th>".$row[1]."</th><th>".$row[2]."</th><th>".$row[3]."</th><th>".($row[4] == 1 ? "Готово" : "В процессе")."</th></tr>";
-							}
+					for($i=0;$i<3;$i++){
+						$row=mysqli_fetch_row($result);
+            if (isset($_POST['submit'])){
+              if ($_COOKIE['login']!=0){
+                if ($_POST["text".$i]!=$row[3] || $_POST["chk".$i]!=($row[4] == 1 ? "on" : "")){
+                  $link2=mysqli_connect($host,$user,$password,$database) or die("Ошибка".mysqli_error($link2));
+              		mysqli_set_charset($link2,"utf8");
+                  if ($_POST["text".$i]!=$row[3]){
+              		    $query="UPDATE `Tasks` SET `task`='".$_POST['text'.$i]."(изменено Администратором)',`status`=".($_POST["chk".$i]== '' ? 0 : 1)." WHERE id=".$row[0].";";
+                      $row[3]=strip_tags($_POST['text'.$i]."(изменено Администратором)");
+                    } else {
+                      $row[3]=strip_tags($_POST['text'.$i]);
+                      $query="UPDATE `Tasks` SET `status`=".($_POST["chk".$i]== '' ? 0 : 1)." WHERE id=".$row[0].";";
+                    }
+              		$result2=mysqli_query($link2,$query)or die("Ошибка запроса".mysqli_error($link2));
 
+                  $row[4]=($_POST["chk".$i]== '' ? 0 : 1);
+                  echo $_POST["chk".$i];
+              		mysqli_close($link2);
+                }
+              } else {
+                header ('Location: loginForm.php');
+              }
+            }
+						if ($row[1]!="") {
+							echo "<tr><th>".$row[1]."</th><th>".$row[2]."</th><th><input type='text' class='form-control'  name='text".$i."' value='".$row[3]."' required></th><th>".($row[4] == 1 ? "<input name='chk".$i."' type='checkbox' value='on' checked>" : "<input name='chk".$i."' type='checkbox'>")."</th></tr>";
 						}
-					echo "</table>";
+
+					}
+				echo "</table>
+				<input type='submit' class='btn btn-primary' name='submit'>
+				</form>";
 				mysqli_close($link);
 				?>
     </body>
